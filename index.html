@@ -1,0 +1,1870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker Pro - Google Drive Edition</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .gdrive-status {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: inline-block;
+        }
+
+        .gdrive-status.connected {
+            background: rgba(40, 167, 69, 0.3);
+        }
+
+        .nav-tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e0e0e0;
+            overflow-x: auto;
+        }
+
+        .nav-tab {
+            flex: 1;
+            min-width: 120px;
+            padding: 18px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .nav-tab:hover {
+            background: #e9ecef;
+        }
+
+        .nav-tab.active {
+            color: #667eea;
+            background: white;
+        }
+
+        .nav-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #667eea;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .tab-pane {
+            display: none;
+        }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .stat-card.income {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+
+        .stat-card.deduction {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-info {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-top: 20px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: #f8f9fa;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .category-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-schedule-c { background: #ffeaa7; color: #2d3436; }
+        .badge-itemized { background: #74b9ff; color: #2d3436; }
+        .badge-above-line { background: #a29bfe; color: #2d3436; }
+        .badge-tracking { background: #dfe6e9; color: #2d3436; }
+        .badge-income { background: #55efc4; color: #2d3436; }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+
+        .alert-danger {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .filter-section {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+
+        .chart-container {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .setup-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+
+        .setup-section h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .setup-step {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .help-text {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .code-block {
+            background: #2d3436;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 13px;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .chart-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💼 Expense Tracker Pro</h1>
+            <p>Google Drive Edition - Track expenses, income, and tax deductions</p>
+            <div id="gdriveStatus" class="gdrive-status">
+                <span id="statusText">🔴 Not Connected to Google Drive</span>
+            </div>
+            <div style="margin-top: 15px;">
+                <button id="gdriveAuthBtn" class="btn btn-success" onclick="handleAuth()" disabled>
+                    <span id="authBtnText">Initializing...</span>
+                </button>
+                <button id="gdriveSignOutBtn" class="btn btn-secondary" onclick="handleSignOut()" style="display: none;">Sign Out</button>
+            </div>
+        </div>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showTab('dashboard')">📊 Dashboard</button>
+            <button class="nav-tab" onclick="showTab('expenses')">💰 Expenses</button>
+            <button class="nav-tab" onclick="showTab('income')">💵 Income</button>
+            <button class="nav-tab" onclick="showTab('mileage')">🚗 Mileage</button>
+            <button class="nav-tab" onclick="showTab('reports')">📈 Reports</button>
+            <button class="nav-tab" onclick="showTab('import')">📥 Import</button>
+            <button class="nav-tab" onclick="showTab('setup')">⚙️ Setup</button>
+        </div>
+
+        <div class="content">
+            <!-- Setup Tab -->
+            <div id="setup" class="tab-pane">
+                <h2 style="margin-bottom: 20px;">⚙️ Google Drive Setup Instructions</h2>
+                
+                <div class="alert alert-info">
+                    <strong>Quick Setup:</strong> This version uses a simpler OAuth flow that works reliably with Netlify. Just paste your Client ID below.
+                </div>
+
+                <div class="setup-section">
+                    <h3>Step 1: Configure Your Google Client ID</h3>
+                    <div class="setup-step">
+                        <div class="form-group">
+                            <label for="clientIdInput">Google Client ID:</label>
+                            <input type="text" id="clientIdInput" placeholder="123456789-abcdefg.apps.googleusercontent.com">
+                            <p class="help-text">Get this from Google Cloud Console → APIs & Services → Credentials</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="saveGoogleConfig()" style="margin-top: 15px;">Save & Initialize</button>
+                    </div>
+
+                    <div id="configStatus" style="display: none;" class="alert alert-success">
+                        ✅ Configuration saved! Google Drive API initialized.
+                    </div>
+                </div>
+
+                <div class="setup-section">
+                    <h3>Step 2: Google Cloud Console Setup</h3>
+                    <div class="setup-step">
+                        <p><strong>Required Authorized JavaScript Origins:</strong></p>
+                        <div class="code-block" id="jsOrigins">https://throughthelensmedia.netlify.app</div>
+                        
+                        <p style="margin-top: 15px;"><strong>Required Authorized Redirect URIs:</strong></p>
+                        <div class="code-block" id="redirectUris">https://throughthelensmedia.netlify.app<br>https://throughthelensmedia.netlify.app/</div>
+                        
+                        <p class="help-text" style="margin-top: 10px;">
+                            Copy these URLs and add them to your OAuth client in Google Cloud Console.
+                            After adding, wait 5 minutes for changes to propagate.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="setup-section">
+                    <h3>Troubleshooting</h3>
+                    <div class="setup-step">
+                        <p><strong>If "Connect Google Drive" button doesn't work:</strong></p>
+                        <ul style="margin-left: 20px; margin-top: 10px;">
+                            <li>Verify your Client ID is correct</li>
+                            <li>Check authorized URLs in Google Cloud Console</li>
+                            <li>Wait 5-10 minutes after updating URLs</li>
+                            <li>Clear browser cache and try again</li>
+                            <li>Try in an incognito/private window</li>
+                        </ul>
+                        
+                        <p style="margin-top: 15px;"><strong>Debug Info:</strong></p>
+                        <button class="btn btn-info" onclick="showDebugInfo()">Show Debug Info</button>
+                        <div id="debugInfo" style="display: none; margin-top: 10px;" class="code-block"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard Tab -->
+            <div id="dashboard" class="tab-pane active">
+                <h2 style="margin-bottom: 20px;">Dashboard Overview</h2>
+                
+                <div class="filter-section">
+                    <div class="form-group" style="margin: 0;">
+                        <label for="dashboardYear">Tax Year</label>
+                        <select id="dashboardYear" onchange="updateDashboard()">
+                            <option value="2025">2025</option>
+                            <option value="2024">2024</option>
+                            <option value="2023">2023</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">Total Expenses</div>
+                        <div class="stat-value" id="totalExpenses">$0.00</div>
+                    </div>
+                    <div class="stat-card income">
+                        <div class="stat-label">Total Income</div>
+                        <div class="stat-value" id="totalIncome">$0.00</div>
+                    </div>
+                    <div class="stat-card deduction">
+                        <div class="stat-label">Schedule C Deductions</div>
+                        <div class="stat-value" id="scheduleCTotal">$0.00</div>
+                    </div>
+                    <div class="stat-card deduction">
+                        <div class="stat-label">Mileage Deduction</div>
+                        <div class="stat-value" id="mileageDeduction">$0.00</div>
+                    </div>
+                </div>
+
+                <div class="chart-grid">
+                    <div class="chart-container">
+                        <h3 style="margin-bottom: 15px;">Expenses by Category</h3>
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h3 style="margin-bottom: 15px;">Monthly Trend</h3>
+                        <canvas id="monthlyChart"></canvas>
+                    </div>
+                </div>
+
+                <h3 style="margin: 30px 0 15px;">Recent Transactions</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th>Description</th>
+                                <th>Category</th>
+                                <th>Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentTransactionsTable">
+                            <tr>
+                                <td colspan="5" style="text-align: center; color: #999;">No transactions yet</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Expenses Tab -->
+            <div id="expenses" class="tab-pane">
+                <h2 style="margin-bottom: 20px;">Add Expense</h2>
+                
+                <form id="expenseForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="expenseDate">Date *</label>
+                            <input type="date" id="expenseDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="expenseAmount">Amount *</label>
+                            <input type="number" id="expenseAmount" step="0.01" placeholder="0.00" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="expenseVendor">Vendor/Payee *</label>
+                            <input type="text" id="expenseVendor" placeholder="e.g., Office Depot" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="expenseTaxCategory">Tax Category *</label>
+                            <select id="expenseTaxCategory" required onchange="updateDeductiblePercent()">
+                                <option value="">Select tax category</option>
+                                <optgroup label="🏢 Schedule C - Business Expenses">
+                                    <option value="advertising">Advertising & Marketing</option>
+                                    <option value="car-truck">Car & Truck Expenses</option>
+                                    <option value="commissions">Commissions & Fees</option>
+                                    <option value="contract-labor">Contract Labor</option>
+                                    <option value="insurance">Insurance (Business)</option>
+                                    <option value="interest">Interest (Business)</option>
+                                    <option value="legal-professional">Legal & Professional Services</option>
+                                    <option value="office">Office Expenses</option>
+                                    <option value="rent-lease">Rent or Lease</option>
+                                    <option value="repairs">Repairs & Maintenance</option>
+                                    <option value="supplies">Supplies</option>
+                                    <option value="taxes-licenses">Taxes & Licenses</option>
+                                    <option value="travel">Travel</option>
+                                    <option value="meals" data-deductible="50">Meals & Entertainment (50%)</option>
+                                    <option value="utilities">Utilities</option>
+                                    <option value="wages">Wages</option>
+                                    <option value="other-business">Other Business Expenses</option>
+                                </optgroup>
+                                <optgroup label="🏠 Schedule A - Itemized Deductions">
+                                    <option value="medical">Medical & Dental</option>
+                                    <option value="state-local-tax">State & Local Taxes</option>
+                                    <option value="mortgage-interest">Mortgage Interest</option>
+                                    <option value="charitable">Charitable Contributions</option>
+                                </optgroup>
+                                <optgroup label="💼 Above-the-Line Deductions">
+                                    <option value="health-insurance-se">Self-Employed Health Insurance</option>
+                                    <option value="retirement">Retirement Contributions</option>
+                                    <option value="student-loan">Student Loan Interest</option>
+                                </optgroup>
+                                <optgroup label="📊 Non-Deductible (Tracking)">
+                                    <option value="personal">Personal Expenses</option>
+                                    <option value="groceries">Groceries</option>
+                                    <option value="entertainment-personal">Entertainment (Personal)</option>
+                                </optgroup>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="expenseDescription">Description</label>
+                        <textarea id="expenseDescription" rows="2" placeholder="Optional notes"></textarea>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="expenseDeductible">Deductible Percentage</label>
+                            <input type="number" id="expenseDeductible" min="0" max="100" value="100" readonly>
+                            <p class="help-text">Automatically calculated based on tax category</p>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Add Expense</button>
+                </form>
+
+                <h3 style="margin: 30px 0 15px;">All Expenses</h3>
+                
+                <div class="filter-section">
+                    <div class="form-group" style="margin: 0;">
+                        <label for="filterTaxCategory">Tax Category</label>
+                        <select id="filterTaxCategory" onchange="filterExpenses()">
+                            <option value="">All Categories</option>
+                            <option value="schedule-c">Schedule C Only</option>
+                            <option value="itemized">Itemized Only</option>
+                            <option value="above-line">Above-the-Line Only</option>
+                            <option value="non-deductible">Non-Deductible Only</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin: 0;">
+                        <label for="filterYear">Year</label>
+                        <select id="filterYear" onchange="filterExpenses()">
+                            <option value="">All Years</option>
+                            <option value="2025">2025</option>
+                            <option value="2024">2024</option>
+                            <option value="2023">2023</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-secondary" onclick="clearFilters()" style="margin-top: 24px;">Clear Filters</button>
+                    <button class="btn btn-success" onclick="syncWithGoogleDrive()" style="margin-top: 24px;">💾 Sync with Google Drive</button>
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Vendor</th>
+                                <th>Tax Category</th>
+                                <th>Amount</th>
+                                <th>Deductible</th>
+                                <th>Description</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="expensesTable">
+                            <tr>
+                                <td colspan="7" style="text-align: center; color: #999;">No expenses yet</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Income Tab -->
+            <div id="income" class="tab-pane">
+                <h2 style="margin-bottom: 20px;">Add Income</h2>
+                
+                <form id="incomeForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="incomeDate">Date *</label>
+                            <input type="date" id="incomeDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="incomeAmount">Amount *</label>
+                            <input type="number" id="incomeAmount" step="0.01" placeholder="0.00" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="incomeSource">Source *</label>
+                            <input type="text" id="incomeSource" placeholder="e.g., ABC Company" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="incomeCategory">Income Type *</label>
+                            <select id="incomeCategory" required>
+                                <option value="">Select income type</option>
+                                <optgroup label="Business Income">
+                                    <option value="1099-nec">1099-NEC Income</option>
+                                    <option value="1099-k">1099-K Income</option>
+                                    <option value="cash">Cash/Check Income</option>
+                                    <option value="product-sales">Product Sales</option>
+                                    <option value="service-revenue">Service Revenue</option>
+                                    <option value="rental-income">Rental Income</option>
+                                </optgroup>
+                                <optgroup label="Personal Income">
+                                    <option value="w2">W-2 Wages</option>
+                                    <option value="interest">Interest Income</option>
+                                    <option value="dividends">Dividend Income</option>
+                                    <option value="capital-gains">Capital Gains</option>
+                                    <option value="retirement">Retirement Distributions</option>
+                                    <option value="social-security">Social Security</option>
+                                    <option value="other">Other Income</option>
+                                </optgroup>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="incomeDescription">Description</label>
+                        <textarea id="incomeDescription" rows="2" placeholder="Optional notes"></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Add Income</button>
+                </form>
+
+                <h3 style="margin: 30px 0 15px;">Income History</h3>
+                
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Source</th>
+                                <th>Type</th>
+                                <th>Amount</th>
+                                <th>Description</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="incomeTable">
+                            <tr>
+                                <td colspan="6" style="text-align: center; color: #999;">No income entries yet</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Mileage Tab -->
+            <div id="mileage" class="tab-pane">
+                <h2 style="margin-bottom: 20px;">Track Mileage</h2>
+                
+                <div class="alert alert-info">
+                    <strong>IRS Standard Mileage Rate 2025:</strong> $0.70 per mile for business use
+                </div>
+
+                <form id="mileageForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="mileageDate">Date *</label>
+                            <input type="date" id="mileageDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="mileageStart">Starting Location *</label>
+                            <input type="text" id="mileageStart" placeholder="e.g., Office" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="mileageEnd">Ending Location *</label>
+                            <input type="text" id="mileageEnd" placeholder="e.g., Client Meeting" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="mileageMiles">Miles Driven *</label>
+                            <input type="number" id="mileageMiles" step="0.1" placeholder="0.0" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="mileagePurpose">Business Purpose *</label>
+                        <textarea id="mileagePurpose" rows="2" placeholder="Describe the business purpose of this trip" required></textarea>
+                    </div>
+
+                    <div class="alert alert-success">
+                        <strong>Estimated Deduction:</strong> <span id="mileageCalc">$0.00</span>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Add Mileage</button>
+                </form>
+
+                <h3 style="margin: 30px 0 15px;">Mileage Log</h3>
+                
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Route</th>
+                                <th>Miles</th>
+                                <th>Purpose</th>
+                                <th>Deduction</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mileageTable">
+                            <tr>
+                                <td colspan="6" style="text-align: center; color: #999;">No mileage entries yet</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Reports Tab -->
+            <div id="reports" class="tab-pane">
+                <h2 style="margin-bottom: 20px;">Tax Reports</h2>
+                
+                <div class="filter-section">
+                    <div class="form-group" style="margin: 0;">
+                        <label for="reportYear">Tax Year</label>
+                        <select id="reportYear" onchange="generateReports()">
+                            <option value="2025">2025</option>
+                            <option value="2024">2024</option>
+                            <option value="2023">2023</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="generateReports()" style="margin-top: 24px;">Generate Reports</button>
+                    <button class="btn btn-success" onclick="exportReportToCSV()" style="margin-top: 24px;">Export to CSV</button>
+                </div>
+
+                <div id="reportContent">
+                    <div class="chart-container">
+                        <h3>Schedule C Summary</h3>
+                        <div id="scheduleCReport" class="table-container">
+                            <p style="padding: 20px; text-align: center; color: #999;">Generate a report to see Schedule C breakdown</p>
+                        </div>
+                    </div>
+
+                    <div class="chart-container">
+                        <h3>Income Summary</h3>
+                        <div id="incomeReport" class="table-container">
+                            <p style="padding: 20px; text-align: center; color: #999;">Generate a report to see income breakdown</p>
+                        </div>
+                    </div>
+
+                    <div class="chart-container">
+                        <h3>Monthly Expense Breakdown</h3>
+                        <canvas id="reportMonthlyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Import Tab -->
+            <div id="import" class="tab-pane">
+                <h2 style="margin-bottom: 20px;">Import Data</h2>
+                
+                <div class="setup-section">
+                    <h3>📊 Import from Rocket Money</h3>
+                    <p style="margin-bottom: 15px; color: #666;">Export your transactions from Rocket Money as CSV and upload here. The app will automatically map categories to tax categories.</p>
+                    
+                    <input type="file" id="rocketMoneyFile" accept=".csv" style="margin-bottom: 15px;">
+                    <button class="btn btn-primary" onclick="handleRocketMoneyImport()">Import Rocket Money CSV</button>
+                </div>
+
+                <div class="setup-section">
+                    <h3>📄 Import Generic CSV</h3>
+                    <p style="margin-bottom: 15px; color: #666;">Upload a CSV with columns: Date, Amount, Category, Vendor, Description</p>
+                    
+                    <input type="file" id="csvFile" accept=".csv" style="margin-bottom: 15px;">
+                    <button class="btn btn-primary" onclick="handleCSVImport()">Import CSV</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Google API Client Library -->
+    <script src="https://apis.google.com/js/api.js"></script>
+    
+    <script>
+        // ========== CONFIGURATION ==========
+        const MILEAGE_RATE = 0.70;
+        const DISCOVERY_DOCS = ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'];
+        const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+        
+        let expenses = [];
+        let income = [];
+        let mileageLog = [];
+        let isSignedIn = false;
+
+        // ========== GOOGLE DRIVE INTEGRATION ==========
+        
+        function saveGoogleConfig() {
+            const clientId = document.getElementById('clientIdInput').value.trim();
+            
+            if (!clientId) {
+                alert('Please enter a Client ID');
+                return;
+            }
+
+            localStorage.setItem('googleClientId', clientId);
+            document.getElementById('configStatus').style.display = 'block';
+            
+            showNotification('Configuration saved! Initializing Google API...', 'success');
+            
+            setTimeout(() => {
+                initGoogleAPI();
+            }, 1000);
+        }
+
+        function initGoogleAPI() {
+            const clientId = localStorage.getItem('googleClientId');
+            
+            if (!clientId) {
+                document.getElementById('authBtnText').textContent = 'Configure Client ID First';
+                showTab('setup');
+                return;
+            }
+
+            gapi.load('client:auth2', () => {
+                gapi.client.init({
+                    clientId: clientId,
+                    discoveryDocs: DISCOVERY_DOCS,
+                    scope: SCOPES
+                }).then(() => {
+                    const authInstance = gapi.auth2.getAuthInstance();
+                    
+                    isSignedIn = authInstance.isSignedIn.get();
+                    updateSigninStatus(isSignedIn);
+                    
+                    authInstance.isSignedIn.listen(updateSigninStatus);
+                    
+                    document.getElementById('gdriveAuthBtn').disabled = false;
+                    document.getElementById('authBtnText').textContent = 'Connect Google Drive';
+                    
+                    showNotification('Google API initialized successfully!', 'success');
+                }, (error) => {
+                    console.error('Error initializing Google API:', error);
+                    showNotification('Error initializing Google API. Check console.', 'danger');
+                    document.getElementById('authBtnText').textContent = 'Initialization Failed';
+                });
+            });
+        }
+
+        function updateSigninStatus(signedIn) {
+            isSignedIn = signedIn;
+            
+            if (signedIn) {
+                document.getElementById('gdriveStatus').classList.add('connected');
+                document.getElementById('statusText').textContent = '🟢 Connected to Google Drive';
+                document.getElementById('gdriveAuthBtn').style.display = 'none';
+                document.getElementById('gdriveSignOutBtn').style.display = 'inline-block';
+                
+                loadDataFromGoogleDrive();
+            } else {
+                document.getElementById('gdriveStatus').classList.remove('connected');
+                document.getElementById('statusText').textContent = '🔴 Not Connected to Google Drive';
+                document.getElementById('gdriveAuthBtn').style.display = 'inline-block';
+                document.getElementById('gdriveSignOutBtn').style.display = 'none';
+            }
+        }
+
+        function handleAuth() {
+            if (!gapi.auth2) {
+                showNotification('Google API not initialized. Please configure Client ID first.', 'warning');
+                showTab('setup');
+                return;
+            }
+            
+            gapi.auth2.getAuthInstance().signIn();
+        }
+
+        function handleSignOut() {
+            gapi.auth2.getAuthInstance().signOut();
+        }
+
+        async function loadDataFromGoogleDrive() {
+            showNotification('Loading data from Google Drive...', 'info');
+            
+            try {
+                const response = await gapi.client.drive.files.list({
+                    q: "name='expense-tracker-data.json' and trashed=false",
+                    spaces: 'drive',
+                    fields: 'files(id, name)',
+                });
+
+                const files = response.result.files;
+                if (files && files.length > 0) {
+                    const fileId = files[0].id;
+                    const fileResponse = await gapi.client.drive.files.get({
+                        fileId: fileId,
+                        alt: 'media',
+                    });
+
+                    const data = JSON.parse(fileResponse.body);
+                    expenses = data.expenses || [];
+                    income = data.income || [];
+                    mileageLog = data.mileageLog || [];
+
+                    // Also save to localStorage as backup
+                    localStorage.setItem('expenses', JSON.stringify(expenses));
+                    localStorage.setItem('income', JSON.stringify(income));
+                    localStorage.setItem('mileageLog', JSON.stringify(mileageLog));
+
+                    updateDashboard();
+                    renderExpenses();
+                    renderIncome();
+                    renderMileage();
+                    showNotification('Data loaded from Google Drive!', 'success');
+                } else {
+                    showNotification('No existing data found in Google Drive', 'info');
+                }
+            } catch (error) {
+                console.error('Error loading from Google Drive:', error);
+                showNotification('Error loading from Google Drive. Using local data.', 'warning');
+            }
+        }
+
+        async function syncWithGoogleDrive() {
+            if (!isSignedIn) {
+                showNotification('Please connect to Google Drive first', 'warning');
+                return;
+            }
+
+            showNotification('Syncing with Google Drive...', 'info');
+
+            const data = {
+                expenses: expenses,
+                income: income,
+                mileageLog: mileageLog,
+                lastSync: new Date().toISOString(),
+            };
+
+            try {
+                const searchResponse = await gapi.client.drive.files.list({
+                    q: "name='expense-tracker-data.json' and trashed=false",
+                    spaces: 'drive',
+                    fields: 'files(id)',
+                });
+
+                const files = searchResponse.result.files;
+                const fileContent = JSON.stringify(data, null, 2);
+                const boundary = '-------314159265358979323846';
+                const delimiter = "\r\n--" + boundary + "\r\n";
+                const close_delim = "\r\n--" + boundary + "--";
+
+                if (files && files.length > 0) {
+                    // Update existing file
+                    const metadata = {
+                        name: 'expense-tracker-data.json',
+                        mimeType: 'application/json',
+                    };
+
+                    const multipartRequestBody =
+                        delimiter +
+                        'Content-Type: application/json\r\n\r\n' +
+                        JSON.stringify(metadata) +
+                        delimiter +
+                        'Content-Type: application/json\r\n\r\n' +
+                        fileContent +
+                        close_delim;
+
+                    await gapi.client.request({
+                        path: `/upload/drive/v3/files/${files[0].id}`,
+                        method: 'PATCH',
+                        params: { uploadType: 'multipart' },
+                        headers: {
+                            'Content-Type': 'multipart/related; boundary="' + boundary + '"'
+                        },
+                        body: multipartRequestBody,
+                    });
+                } else {
+                    // Create new file
+                    const metadata = {
+                        name: 'expense-tracker-data.json',
+                        mimeType: 'application/json',
+                    };
+
+                    const multipartRequestBody =
+                        delimiter +
+                        'Content-Type: application/json\r\n\r\n' +
+                        JSON.stringify(metadata) +
+                        delimiter +
+                        'Content-Type: application/json\r\n\r\n' +
+                        fileContent +
+                        close_delim;
+
+                    await gapi.client.request({
+                        path: '/upload/drive/v3/files',
+                        method: 'POST',
+                        params: { uploadType: 'multipart' },
+                        headers: {
+                            'Content-Type': 'multipart/related; boundary="' + boundary + '"'
+                        },
+                        body: multipartRequestBody,
+                    });
+                }
+
+                showNotification('Data synced to Google Drive!', 'success');
+            } catch (error) {
+                console.error('Error syncing to Google Drive:', error);
+                showNotification('Error syncing to Google Drive: ' + error.message, 'danger');
+            }
+        }
+
+        function showDebugInfo() {
+            const clientId = localStorage.getItem('googleClientId');
+            const debugDiv = document.getElementById('debugInfo');
+            
+            let debugInfo = `Client ID configured: ${clientId ? 'Yes' : 'No'}\n`;
+            debugInfo += `Client ID: ${clientId || 'Not set'}\n`;
+            debugInfo += `Google API loaded: ${typeof gapi !== 'undefined' ? 'Yes' : 'No'}\n`;
+            debugInfo += `Auth2 initialized: ${gapi.auth2 ? 'Yes' : 'No'}\n`;
+            debugInfo += `Signed in: ${isSignedIn ? 'Yes' : 'No'}\n`;
+            debugInfo += `Current URL: ${window.location.href}\n`;
+            debugInfo += `Expenses count: ${expenses.length}\n`;
+            debugInfo += `Income count: ${income.length}\n`;
+            debugInfo += `Mileage count: ${mileageLog.length}\n`;
+            
+            debugDiv.textContent = debugInfo;
+            debugDiv.style.display = 'block';
+        }
+
+        // Auto-populate redirect URIs based on current URL
+        window.addEventListener('DOMContentLoaded', () => {
+            const currentUrl = window.location.origin + window.location.pathname;
+            const baseUrl = window.location.origin;
+            
+            document.getElementById('jsOrigins').textContent = baseUrl;
+            document.getElementById('redirectUris').innerHTML = 
+                `${baseUrl}<br>${baseUrl}/<br>${currentUrl}`;
+        });
+
+        // ========== INITIALIZATION ==========
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set default dates
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('expenseDate').value = today;
+            document.getElementById('incomeDate').value = today;
+            document.getElementById('mileageDate').value = today;
+            document.getElementById('dashboardYear').value = new Date().getFullYear().toString();
+            document.getElementById('reportYear').value = new Date().getFullYear().toString();
+            
+            // Load data from localStorage as fallback
+            expenses = JSON.parse(localStorage.getItem('expenses')) || [];
+            income = JSON.parse(localStorage.getItem('income')) || [];
+            mileageLog = JSON.parse(localStorage.getItem('mileageLog')) || [];
+            
+            // Load saved Client ID
+            const savedClientId = localStorage.getItem('googleClientId');
+            if (savedClientId) {
+                document.getElementById('clientIdInput').value = savedClientId;
+                initGoogleAPI();
+            }
+            
+            updateDashboard();
+            renderExpenses();
+            renderIncome();
+            renderMileage();
+        });
+
+        // ========== TAB MANAGEMENT ==========
+        
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+            
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // ========== FORM HANDLERS ==========
+        
+        document.getElementById('expenseForm')?.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const expense = {
+                id: Date.now(),
+                date: document.getElementById('expenseDate').value,
+                amount: parseFloat(document.getElementById('expenseAmount').value),
+                vendor: document.getElementById('expenseVendor').value,
+                taxCategory: document.getElementById('expenseTaxCategory').value,
+                description: document.getElementById('expenseDescription').value,
+                deductiblePercent: parseInt(document.getElementById('expenseDeductible').value),
+                type: 'expense'
+            };
+            
+            expenses.unshift(expense);
+            localStorage.setItem('expenses', JSON.stringify(expenses));
+            
+            this.reset();
+            document.getElementById('expenseDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('expenseDeductible').value = 100;
+            
+            updateDashboard();
+            renderExpenses();
+            showNotification('Expense added! Remember to sync with Google Drive.', 'success');
+        });
+
+        document.getElementById('incomeForm')?.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const incomeEntry = {
+                id: Date.now(),
+                date: document.getElementById('incomeDate').value,
+                amount: parseFloat(document.getElementById('incomeAmount').value),
+                source: document.getElementById('incomeSource').value,
+                category: document.getElementById('incomeCategory').value,
+                description: document.getElementById('incomeDescription').value,
+                type: 'income'
+            };
+            
+            income.unshift(incomeEntry);
+            localStorage.setItem('income', JSON.stringify(income));
+            
+            this.reset();
+            document.getElementById('incomeDate').value = new Date().toISOString().split('T')[0];
+            
+            updateDashboard();
+            renderIncome();
+            showNotification('Income added! Remember to sync with Google Drive.', 'success');
+        });
+
+        document.getElementById('mileageForm')?.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const miles = parseFloat(document.getElementById('mileageMiles').value);
+            const mileageEntry = {
+                id: Date.now(),
+                date: document.getElementById('mileageDate').value,
+                start: document.getElementById('mileageStart').value,
+                end: document.getElementById('mileageEnd').value,
+                miles: miles,
+                purpose: document.getElementById('mileagePurpose').value,
+                deduction: miles * MILEAGE_RATE,
+                type: 'mileage'
+            };
+            
+            mileageLog.unshift(mileageEntry);
+            localStorage.setItem('mileageLog', JSON.stringify(mileageLog));
+            
+            this.reset();
+            document.getElementById('mileageDate').value = new Date().toISOString().split('T')[0];
+            
+            updateDashboard();
+            renderMileage();
+            showNotification('Mileage entry added! Remember to sync with Google Drive.', 'success');
+        });
+
+        document.getElementById('mileageMiles')?.addEventListener('input', function() {
+            const miles = parseFloat(this.value) || 0;
+            document.getElementById('mileageCalc').textContent = '$' + (miles * MILEAGE_RATE).toFixed(2);
+        });
+
+        function updateDeductiblePercent() {
+            const select = document.getElementById('expenseTaxCategory');
+            const selectedOption = select.options[select.selectedIndex];
+            const deductible = selectedOption.getAttribute('data-deductible') || '100';
+            document.getElementById('expenseDeductible').value = deductible;
+        }
+
+        // ========== RENDER FUNCTIONS ==========
+        
+        function updateDashboard() {
+            const year = document.getElementById('dashboardYear')?.value || new Date().getFullYear().toString();
+            
+            const yearExpenses = expenses.filter(e => e.date.startsWith(year));
+            const yearIncome = income.filter(i => i.date.startsWith(year));
+            const yearMileage = mileageLog.filter(m => m.date.startsWith(year));
+            
+            const totalExpenseAmount = yearExpenses.reduce((sum, e) => sum + e.amount, 0);
+            const totalIncomeAmount = yearIncome.reduce((sum, i) => sum + i.amount, 0);
+            const scheduleCAmount = yearExpenses
+                .filter(e => isScheduleC(e.taxCategory))
+                .reduce((sum, e) => sum + (e.amount * (e.deductiblePercent / 100)), 0);
+            const mileageDeductionAmount = yearMileage.reduce((sum, m) => sum + m.deduction, 0);
+            
+            document.getElementById('totalExpenses').textContent = '$' + totalExpenseAmount.toFixed(2);
+            document.getElementById('totalIncome').textContent = '$' + totalIncomeAmount.toFixed(2);
+            document.getElementById('scheduleCTotal').textContent = '$' + scheduleCAmount.toFixed(2);
+            document.getElementById('mileageDeduction').textContent = '$' + mileageDeductionAmount.toFixed(2);
+            
+            const allTransactions = [
+                ...expenses.map(e => ({ ...e, type: 'expense' })),
+                ...income.map(i => ({ ...i, type: 'income' }))
+            ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10);
+            
+            const tbody = document.getElementById('recentTransactionsTable');
+            if (allTransactions.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #999;">No transactions yet</td></tr>';
+            } else {
+                tbody.innerHTML = allTransactions.map(t => `
+                    <tr>
+                        <td>${formatDate(t.date)}</td>
+                        <td>${t.type === 'expense' ? '💰 Expense' : '💵 Income'}</td>
+                        <td>${t.vendor || t.source}</td>
+                        <td><span class="category-badge badge-${t.type}">${getTaxCategoryName(t.taxCategory || t.category)}</span></td>
+                        <td style="color: ${t.type === 'expense' ? '#dc3545' : '#28a745'};">${t.type === 'expense' ? '-' : '+'}$${t.amount.toFixed(2)}</td>
+                    </tr>
+                `).join('');
+            }
+            
+            renderCharts(year);
+        }
+
+        function renderCharts(year) {
+            const yearExpenses = expenses.filter(e => e.date.startsWith(year));
+            
+            const categoryData = {};
+            yearExpenses.forEach(e => {
+                const cat = getTaxCategoryName(e.taxCategory);
+                categoryData[cat] = (categoryData[cat] || 0) + e.amount;
+            });
+            
+            const categoryCtx = document.getElementById('categoryChart');
+            if (categoryCtx && window.Chart) {
+                if (window.categoryChartInstance) {
+                    window.categoryChartInstance.destroy();
+                }
+                window.categoryChartInstance = new Chart(categoryCtx, {
+                    type: 'pie',
+                    data: {
+                        labels: Object.keys(categoryData),
+                        datasets: [{
+                            data: Object.values(categoryData),
+                            backgroundColor: [
+                                '#667eea', '#764ba2', '#f093fb', '#f5576c',
+                                '#11998e', '#38ef7d', '#ffeaa7', '#74b9ff'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                            }
+                        }
+                    }
+                });
+            }
+            
+            const monthlyData = Array(12).fill(0);
+            yearExpenses.forEach(e => {
+                const month = new Date(e.date).getMonth();
+                monthlyData[month] += e.amount;
+            });
+            
+            const monthlyCtx = document.getElementById('monthlyChart');
+            if (monthlyCtx && window.Chart) {
+                if (window.monthlyChartInstance) {
+                    window.monthlyChartInstance.destroy();
+                }
+                window.monthlyChartInstance = new Chart(monthlyCtx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                        datasets: [{
+                            label: 'Monthly Expenses',
+                            data: monthlyData,
+                            borderColor: '#667eea',
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return '$' + value.toFixed(0);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        function renderExpenses() {
+            const tbody = document.getElementById('expensesTable');
+            
+            if (expenses.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #999;">No expenses yet</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = expenses.map(exp => {
+                const deductibleAmount = exp.amount * (exp.deductiblePercent / 100);
+                return `
+                    <tr>
+                        <td>${formatDate(exp.date)}</td>
+                        <td>${exp.vendor}</td>
+                        <td><span class="category-badge badge-${getTaxCategoryType(exp.taxCategory)}">${getTaxCategoryName(exp.taxCategory)}</span></td>
+                        <td>$${exp.amount.toFixed(2)}</td>
+                        <td>$${deductibleAmount.toFixed(2)} (${exp.deductiblePercent}%)</td>
+                        <td>${exp.description || '-'}</td>
+                        <td>
+                            <button class="action-btn btn-danger" onclick="deleteExpense(${exp.id})">Delete</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderIncome() {
+            const tbody = document.getElementById('incomeTable');
+            
+            if (income.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #999;">No income entries yet</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = income.map(inc => `
+                <tr>
+                    <td>${formatDate(inc.date)}</td>
+                    <td>${inc.source}</td>
+                    <td><span class="category-badge badge-income">${getIncomeCategoryName(inc.category)}</span></td>
+                    <td>$${inc.amount.toFixed(2)}</td>
+                    <td>${inc.description || '-'}</td>
+                    <td>
+                        <button class="action-btn btn-danger" onclick="deleteIncome(${inc.id})">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderMileage() {
+            const tbody = document.getElementById('mileageTable');
+            
+            if (mileageLog.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #999;">No mileage entries yet</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = mileageLog.map(m => `
+                <tr>
+                    <td>${formatDate(m.date)}</td>
+                    <td>${m.start} → ${m.end}</td>
+                    <td>${m.miles.toFixed(1)} mi</td>
+                    <td>${m.purpose}</td>
+                    <td>$${m.deduction.toFixed(2)}</td>
+                    <td>
+                        <button class="action-btn btn-danger" onclick="deleteMileage(${m.id})">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function deleteExpense(id) {
+            if (confirm('Delete this expense?')) {
+                expenses = expenses.filter(exp => exp.id !== id);
+                localStorage.setItem('expenses', JSON.stringify(expenses));
+                updateDashboard();
+                renderExpenses();
+                showNotification('Expense deleted');
+            }
+        }
+
+        function deleteIncome(id) {
+            if (confirm('Delete this income entry?')) {
+                income = income.filter(inc => inc.id !== id);
+                localStorage.setItem('income', JSON.stringify(income));
+                updateDashboard();
+                renderIncome();
+                showNotification('Income entry deleted');
+            }
+        }
+
+        function deleteMileage(id) {
+            if (confirm('Delete this mileage entry?')) {
+                mileageLog = mileageLog.filter(m => m.id !== id);
+                localStorage.setItem('mileageLog', JSON.stringify(mileageLog));
+                updateDashboard();
+                renderMileage();
+                showNotification('Mileage entry deleted');
+            }
+        }
+
+        function filterExpenses() {
+            const taxCatFilter = document.getElementById('filterTaxCategory')?.value;
+            const yearFilter = document.getElementById('filterYear')?.value;
+            
+            let filtered = expenses;
+            
+            if (taxCatFilter) {
+                filtered = filtered.filter(e => {
+                    if (taxCatFilter === 'schedule-c') return isScheduleC(e.taxCategory);
+                    if (taxCatFilter === 'itemized') return isItemized(e.taxCategory);
+                    if (taxCatFilter === 'above-line') return isAboveLine(e.taxCategory);
+                    if (taxCatFilter === 'non-deductible') return isNonDeductible(e.taxCategory);
+                    return true;
+                });
+            }
+            
+            if (yearFilter) {
+                filtered = filtered.filter(e => e.date.startsWith(yearFilter));
+            }
+            
+            const tbody = document.getElementById('expensesTable');
+            
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #999;">No expenses match the filters</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = filtered.map(exp => {
+                const deductibleAmount = exp.amount * (exp.deductiblePercent / 100);
+                return `
+                    <tr>
+                        <td>${formatDate(exp.date)}</td>
+                        <td>${exp.vendor}</td>
+                        <td><span class="category-badge badge-${getTaxCategoryType(exp.taxCategory)}">${getTaxCategoryName(exp.taxCategory)}</span></td>
+                        <td>$${exp.amount.toFixed(2)}</td>
+                        <td>$${deductibleAmount.toFixed(2)} (${exp.deductiblePercent}%)</td>
+                        <td>${exp.description || '-'}</td>
+                        <td>
+                            <button class="action-btn btn-danger" onclick="deleteExpense(${exp.id})">Delete</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function clearFilters() {
+            if (document.getElementById('filterTaxCategory')) {
+                document.getElementById('filterTaxCategory').value = '';
+            }
+            if (document.getElementById('filterYear')) {
+                document.getElementById('filterYear').value = '';
+            }
+            renderExpenses();
+        }
+
+        function handleRocketMoneyImport() {
+            const file = document.getElementById('rocketMoneyFile').files[0];
+            if (!file) {
+                alert('Please select a file first');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const csv = e.target.result;
+                    const lines = csv.split('\n');
+                    
+                    let imported = 0;
+                    for (let i = 1; i < lines.length; i++) {
+                        if (!lines[i].trim()) continue;
+                        
+                        const values = parseCSVLine(lines[i]);
+                        
+                        const date = values[0] || new Date().toISOString().split('T')[0];
+                        const amount = Math.abs(parseFloat(values[8]) || 0);
+                        const vendor = values[6] || values[7] || 'Unknown';
+                        const description = values[9] || '';
+                        const rocketCategory = values[10] || '';
+                        
+                        if (amount > 0) {
+                            const expense = {
+                                id: Date.now() + i,
+                                date: date,
+                                amount: amount,
+                                vendor: vendor,
+                                taxCategory: mapRocketMoneyCategory(rocketCategory),
+                                description: description,
+                                deductiblePercent: 100,
+                                type: 'expense'
+                            };
+                            
+                            expenses.unshift(expense);
+                            imported++;
+                        }
+                    }
+                    
+                    localStorage.setItem('expenses', JSON.stringify(expenses));
+                    updateDashboard();
+                    renderExpenses();
+                    showNotification(`Imported ${imported} expenses from Rocket Money!`, 'success');
+                } catch (error) {
+                    console.error(error);
+                    alert('Error importing file. Please check the format.');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function handleCSVImport() {
+            const file = document.getElementById('csvFile').files[0];
+            if (!file) {
+                alert('Please select a file first');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const csv = e.target.result;
+                    const lines = csv.split('\n');
+                    
+                    let imported = 0;
+                    for (let i = 1; i < lines.length; i++) {
+                        if (!lines[i].trim()) continue;
+                        
+                        const values = parseCSVLine(lines[i]);
+                        const expense = {
+                            id: Date.now() + i,
+                            date: values[0] || new Date().toISOString().split('T')[0],
+                            amount: parseFloat(values[1]) || 0,
+                            vendor: values[3] || 'Unknown',
+                            taxCategory: mapRocketMoneyCategory(values[2]) || 'other-business',
+                            description: values[4] || '',
+                            deductiblePercent: 100,
+                            type: 'expense'
+                        };
+                        
+                        if (expense.amount > 0) {
+                            expenses.unshift(expense);
+                            imported++;
+                        }
+                    }
+                    
+                    localStorage.setItem('expenses', JSON.stringify(expenses));
+                    updateDashboard();
+                    renderExpenses();
+                    showNotification(`Imported ${imported} expenses!`, 'success');
+                } catch (error) {
+                    console.error(error);
+                    alert('Error importing file. Please check the format.');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current.trim());
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            result.push(current.trim());
+            
+            return result;
+        }
+
+        function mapRocketMoneyCategory(category) {
+            const map = {
+                'advertising': 'advertising',
+                'auto & transport': 'car-truck',
+                'auto insurance': 'car-truck',
+                'bills & utilities': 'utilities',
+                'business services': 'legal-professional',
+                'education': 'other-business',
+                'food & dining': 'meals',
+                'restaurants': 'meals',
+                'gas & fuel': 'car-truck',
+                'gifts & donations': 'charitable',
+                'groceries': 'groceries',
+                'health & fitness': 'medical',
+                'insurance': 'insurance',
+                'internet': 'utilities',
+                'office supplies': 'office',
+                'phone': 'utilities',
+                'professional services': 'legal-professional',
+                'rent': 'rent-lease',
+                'software': 'office',
+                'taxes': 'taxes-licenses',
+                'travel': 'travel',
+            };
+            
+            const lower = category.toLowerCase();
+            return map[lower] || 'other-business';
+        }
+
+        function generateReports() {
+            const year = document.getElementById('reportYear').value;
+            const yearExpenses = expenses.filter(e => e.date.startsWith(year));
+            const yearIncome = income.filter(i => i.date.startsWith(year));
+            
+            const scheduleCExpenses = yearExpenses.filter(e => isScheduleC(e.taxCategory));
+            const scheduleCByCategory = {};
+            
+            scheduleCExpenses.forEach(e => {
+                const cat = getTaxCategoryName(e.taxCategory);
+                const deductible = e.amount * (e.deductiblePercent / 100);
+                scheduleCByCategory[cat] = (scheduleCByCategory[cat] || 0) + deductible;
+            });
+            
+            let scheduleCHTML = '<table><thead><tr><th>Category</th><th>Amount</th></tr></thead><tbody>';
+            Object.entries(scheduleCByCategory).sort((a, b) => b[1] - a[1]).forEach(([cat, amt]) => {
+                scheduleCHTML += `<tr><td>${cat}</td><td>$${amt.toFixed(2)}</td></tr>`;
+            });
+            const scheduleCTotal = Object.values(scheduleCByCategory).reduce((sum, v) => sum + v, 0);
+            scheduleCHTML += `<tr style="font-weight: bold; border-top: 2px solid #333;"><td>Total Schedule C Deductions</td><td>$${scheduleCTotal.toFixed(2)}</td></tr>`;
+            scheduleCHTML += '</tbody></table>';
+            
+            document.getElementById('scheduleCReport').innerHTML = scheduleCHTML;
+            
+            const incomeByCategory = {};
+            yearIncome.forEach(i => {
+                const cat = getIncomeCategoryName(i.category);
+                incomeByCategory[cat] = (incomeByCategory[cat] || 0) + i.amount;
+            });
+            
+            let incomeHTML = '<table><thead><tr><th>Income Type</th><th>Amount</th></tr></thead><tbody>';
+            Object.entries(incomeByCategory).sort((a, b) => b[1] - a[1]).forEach(([cat, amt]) => {
+                incomeHTML += `<tr><td>${cat}</td><td>$${amt.toFixed(2)}</td></tr>`;
+            });
+            const incomeTotal = Object.values(incomeByCategory).reduce((sum, v) => sum + v, 0);
+            incomeHTML += `<tr style="font-weight: bold; border-top: 2px solid #333;"><td>Total Income</td><td>$${incomeTotal.toFixed(2)}</td></tr>`;
+            incomeHTML += '</tbody></table>';
+            
+            document.getElementById('incomeReport').innerHTML = incomeHTML;
+            
+            showNotification('Reports generated!', 'success');
+        }
+
+        function exportReportToCSV() {
+            const year = document.getElementById('reportYear').value;
+            const yearExpenses = expenses.filter(e => e.date.startsWith(year));
+            const yearIncome = income.filter(i => i.date.startsWith(year));
+            
+            let csv = 'Tax Report - Year ' + year + '\n\n';
+            csv += 'EXPENSES\n';
+            csv += 'Date,Vendor,Tax Category,Amount,Deductible Amount,Description\n';
+            
+            yearExpenses.forEach(e => {
+                const deductible = e.amount * (e.deductiblePercent / 100);
+                csv += `${e.date},${e.vendor},${getTaxCategoryName(e.taxCategory)},${e.amount.toFixed(2)},${deductible.toFixed(2)},"${e.description || ''}"\n`;
+            });
+            
+            csv += '\n\nINCOME\n';
+            csv += 'Date,Source,Type,Amount,Description\n';
+            
+            yearIncome.forEach(i => {
+                csv += `${i.date},${i.source},${getIncomeCategoryName(i.category)},${i.amount.toFixed(2)},"${i.description || ''}"\n`;
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `tax-report-${year}.csv`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr + 'T00:00:00');
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+
+        function isScheduleC(category) {
+            const scheduleCCategories = [
+                'advertising', 'car-truck', 'commissions', 'contract-labor',
+                'insurance', 'interest', 'legal-professional', 'office',
+                'rent-lease', 'repairs', 'supplies', 'taxes-licenses',
+                'travel', 'meals', 'utilities', 'wages', 'other-business'
+            ];
+            return scheduleCCategories.includes(category);
+        }
+
+        function isItemized(category) {
+            const itemizedCategories = [
+                'medical', 'state-local-tax', 'mortgage-interest', 'charitable'
+            ];
+            return itemizedCategories.includes(category);
+        }
+
+        function isAboveLine(category) {
+            const aboveLineCategories = [
+                'health-insurance-se', 'retirement', 'student-loan'
+            ];
+            return aboveLineCategories.includes(category);
+        }
+
+        function isNonDeductible(category) {
+            const nonDeductibleCategories = [
+                'personal', 'groceries', 'entertainment-personal'
+            ];
+            return nonDeductibleCategories.includes(category);
+        }
+
+        function getTaxCategoryType(category) {
+            if (isScheduleC(category)) return 'schedule-c';
+            if (isItemized(category)) return 'itemized';
+            if (isAboveLine(category)) return 'above-line';
+            return 'tracking';
+        }
+
+        function getTaxCategoryName(category) {
+            const names = {
+                'advertising': 'Advertising & Marketing',
+                'car-truck': 'Car & Truck Expenses',
+                'commissions': 'Commissions & Fees',
+                'contract-labor': 'Contract Labor',
+                'insurance': 'Insurance (Business)',
+                'interest': 'Interest (Business)',
+                'legal-professional': 'Legal & Professional',
+                'office': 'Office Expenses',
+                'rent-lease': 'Rent or Lease',
+                'repairs': 'Repairs & Maintenance',
+                'supplies': 'Supplies',
+                'taxes-licenses': 'Taxes & Licenses',
+                'travel': 'Travel',
+                'meals': 'Meals (50% deductible)',
+                'utilities': 'Utilities',
+                'wages': 'Wages',
+                'other-business': 'Other Business',
+                'medical': 'Medical & Dental',
+                'state-local-tax': 'State & Local Taxes',
+                'mortgage-interest': 'Mortgage Interest',
+                'charitable': 'Charitable Contributions',
+                'health-insurance-se': 'Self-Employed Health Insurance',
+                'retirement': 'Retirement Contributions',
+                'student-loan': 'Student Loan Interest',
+                'personal': 'Personal Expenses',
+                'groceries': 'Groceries',
+                'entertainment-personal': 'Entertainment (Personal)'
+            };
+            return names[category] || category;
+        }
+
+        function getIncomeCategoryName(category) {
+            const names = {
+                '1099-nec': '1099-NEC Income',
+                '1099-k': '1099-K Income',
+                'cash': 'Cash/Check Income',
+                'product-sales': 'Product Sales',
+                'service-revenue': 'Service Revenue',
+                'rental-income': 'Rental Income',
+                'w2': 'W-2 Wages',
+                'interest': 'Interest Income',
+                'dividends': 'Dividend Income',
+                'capital-gains': 'Capital Gains',
+                'retirement': 'Retirement Distributions',
+                'social-security': 'Social Security',
+                'other': 'Other Income'
+            };
+            return names[category] || category;
+        }
+
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `alert alert-${type}`;
+            notification.textContent = message;
+            notification.style.position = 'fixed';
+            notification.style.top = '20px';
+            notification.style.right = '20px';
+            notification.style.zIndex = '10000';
+            notification.style.minWidth = '300px';
+            notification.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 4000);
+        }
+    </script>
+</body>
+</html>
